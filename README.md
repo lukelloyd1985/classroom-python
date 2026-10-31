@@ -29,6 +29,17 @@ Open `/admin.html`, enter the PIN, tap **On each tablet** or **On the Pi**. Tabl
 (a run already in progress finishes where it started). The choice survives restarts.
 The same page shows how many runs are active on the Pi and has a **Stop all** button.
 
+**Changing the PIN:** on the Pi, edit the PIN file and restart the service (the file is read only at start-up):
+
+```sh
+echo "7391" | sudo tee /var/lib/classroom-python/admin_pin.txt
+sudo systemctl restart classroom-python
+```
+Any text works (surrounding whitespace is ignored). Keep the file readable by the `classroom` user
+(`sudo chown classroom:classroom /var/lib/classroom-python/admin_pin.txt`). An empty file makes the server
+generate a new random PIN. `--pin` or `CLASSROOM_PIN`, if used, override the file. Restarting stops any programs
+running on the Pi at that moment but keeps the chosen mode.
+
 Tablets that cannot run Skulpt at all automatically use the Pi instead and show a note.
 For testing one tablet, add `?mode=client` or `?mode=server` to its address (the teacher flag is then ignored on that tablet).
 

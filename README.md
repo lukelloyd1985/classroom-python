@@ -32,7 +32,49 @@ The same page shows how many runs are active on the Pi and has a **Stop all** bu
 Tablets that cannot run Skulpt at all automatically use the Pi instead and show a note.
 For testing one tablet, add `?mode=client` or `?mode=server` to its address (the teacher flag is then ignored on that tablet).
 
+## Getting Raspberry Pi OS onto the Pi (do this first)
+
+`pi/setup.sh` expects a Pi that is already running Raspberry Pi OS, has a network connection to the internet
+(only for the one-off `apt` install) and that you can reach by SSH or keyboard and screen.
+
+**You need:** a Raspberry Pi with built-in Wi-Fi (3B+, 4, 5 or Zero 2 W; a 4 or 5 is comfortable for a full class),
+a microSD card of 16 GB or more, a suitable power supply, and a computer with an SD card reader.
+Use an Ethernet cable for the setup if you can, because the Wi-Fi radio becomes the classroom hotspot afterwards.
+
+1. **Install Raspberry Pi Imager** on your computer from <https://www.raspberrypi.com/software/> and insert the SD card.
+2. In Imager choose your Pi model, then the OS **Raspberry Pi OS Lite (64-bit)** (under "Raspberry Pi OS (other)").
+   Lite has no desktop, which is all this needs. Choose the SD card as storage.
+3. When asked to customise settings (the gear icon or "Edit settings", depending on the version), set:
+   * **Hostname**, for example `pythonpi`
+   * **Username and password** (this is your admin login, not a student or teacher PIN)
+   * **Wi-Fi** name and password of a network that has internet, *only if* you are not using Ethernet
+   * **Locale/time zone** and keyboard layout
+   * **Enable SSH** (password authentication is fine)
+4. Write the card, put it in the Pi and power it on. The first boot takes a minute or two.
+5. **Connect to it** from your computer: `ssh <username>@pythonpi.local` (or use the Pi's IP address from your router,
+   or plug in a keyboard and screen). Then bring it up to date:
+   ```sh
+   sudo apt update && sudo apt full-upgrade -y
+   ```
+6. **Get this project onto the Pi**, either with git (while it has internet):
+   ```sh
+   sudo apt install -y git
+   git clone https://github.com/lukelloyd1985/useful.git
+   cd "useful/Classroom Python"
+   git checkout ccr-37f6c0f8-gcw5mo   # until this branch is merged to the default branch
+   ```
+   or copy the folder from your computer: `scp -r "Classroom Python" <username>@pythonpi.local:~/`
+7. Continue with **Raspberry Pi setup** below.
+
+After `setup.sh` the Wi-Fi radio is the classroom hotspot and no longer joins your normal network, so afterwards
+reach the Pi by Ethernet, or join your laptop to the classroom Wi-Fi and use `ssh <username>@192.168.4.1`.
+Have the Ethernet cable or a keyboard and screen handy the first time in case something needs fixing.
+
+Check the Python version before you start: `python3 --version` should show 3.7 or newer. Current Raspberry Pi OS does.
+
 ## Raspberry Pi setup
+
+Run these on the Pi, from the `Classroom Python` folder:
 
 ```sh
 sudo ./pi/setup.sh PythonClass "a-good-passphrase"

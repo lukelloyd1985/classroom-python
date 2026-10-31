@@ -1,0 +1,23 @@
+[Unit]
+Description=Classroom Python
+After=network.target
+
+[Service]
+User=classroom
+Group=classroom
+WorkingDirectory=/opt/classroom-python/server
+ExecStart=/usr/bin/python3 /opt/classroom-python/server/server.py --port 80 --data-dir /var/lib/classroom-python
+Restart=always
+# Port 80 without root
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+# Whole-service limits: student code runs inside this cgroup
+MemoryMax=1G
+TasksMax=512
+# Hardening
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/classroom-python
+
+[Install]
+WantedBy=multi-user.target

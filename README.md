@@ -61,7 +61,6 @@ Use an Ethernet cable for the setup if you can, because the Wi-Fi radio becomes 
    sudo apt install -y git
    git clone https://github.com/lukelloyd1985/useful.git
    cd "useful/Classroom Python"
-   git checkout ccr-37f6c0f8-gcw5mo   # until this branch is merged to the default branch
    ```
    or copy the folder from your computer: `scp -r "Classroom Python" <username>@pythonpi.local:~/`
 7. Continue with **Raspberry Pi setup** below.

@@ -1,0 +1,23 @@
+/* Old Android 4.2 browsers: no flexbox/calc/vh, so sizes are set by app.js (layout()). */
+html, body { margin: 0; padding: 0; height: 100%; background: #f4f4f4; font-family: sans-serif; }
+#bar { background: #26324a; padding: 6px 8px; min-height: 40px; }
+.btn { font-size: 16px; padding: 8px 12px; margin: 0 4px 0 0; border: 1px solid #99a; border-radius: 4px;
+       background: #e8e8ee; color: #111; }
+.btn.go { background: #2e9e4f; color: #fff; border-color: #1f7a3a; font-weight: bold; }
+.btn.stop { background: #c0392b; color: #fff; border-color: #8e281e; }
+.btn[disabled] { opacity: 0.4; }
+#status { color: #cfd6e6; font-size: 14px; margin-left: 6px; }
+#notice { display: none; background: #fff3c4; color: #5a4500; padding: 6px 10px; font-size: 14px;
+          border-bottom: 1px solid #e0c866; }
+#editorwrap { background: #fff; border-bottom: 2px solid #26324a; overflow: hidden; }
+#code { width: 100%; box-sizing: border-box; -webkit-box-sizing: border-box; margin: 0; padding: 8px;
+        border: 0; font-family: monospace; font-size: 16px; line-height: 1.35; resize: none; display: block; }
+.CodeMirror { font-family: monospace; font-size: 16px; line-height: 1.35; }
+#out { margin: 0; padding: 8px; background: #101820; color: #e8f1ff; font-family: monospace; font-size: 16px;
+       white-space: pre-wrap; word-wrap: break-word; overflow: auto; -webkit-overflow-scrolling: touch;
+       box-sizing: border-box; -webkit-box-sizing: border-box; }
+#out .err { color: #ff8a80; }
+#out .echo { color: #9ccc65; }
+#out .note { color: #ffd54f; }
+#inputrow { margin: 0; padding: 6px 8px; background: #26324a; display: none; }
+#stdin { width: 70%; font-size: 16px; padding: 8px; box-sizing: border-box; -webkit-box-sizing: border-box; }

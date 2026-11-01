@@ -40,6 +40,33 @@ cp "$HERE/pi/classroom-python.service" /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now classroom-python
 
+# --- clean slate: remove Wi-Fi/hotspot config from any earlier run so re-running always ends the same ---
+# Deletes: every NetworkManager Wi-Fi profile, anything bound to wlan0 (e.g. the wrong "ethernet" profile an
+# early version created) and the files/services both setup methods write. Wired profiles are left alone.
+clean_wifi_config() {
+  echo "Cleaning old Wi-Fi configuration..."
+  for svc in hostapd dnsmasq; do
+    systemctl disable --now "$svc" >/dev/null 2>&1 || true
+  done
+  if command -v nmcli >/dev/null 2>&1 && systemctl is-active --quiet NetworkManager; then
+    nmcli -t -f UUID,TYPE connection show 2>/dev/null | while IFS=: read -r uuid ctype; do
+      [ -n "$uuid" ] || continue
+      iface="$(nmcli -g connection.interface-name connection show uuid "$uuid" 2>/dev/null || true)"
+      if [ "$ctype" = "802-11-wireless" ] || [ "$iface" = "wlan0" ]; then
+        nmcli connection delete uuid "$uuid" >/dev/null 2>&1 || true
+      fi
+    done
+    nmcli connection delete classroom-ap >/dev/null 2>&1 || true
+    nmcli device set wlan0 managed yes >/dev/null 2>&1 || true   # an early version set it to "no"
+  fi
+  rm -f /etc/NetworkManager/dnsmasq-shared.d/classroom.conf /etc/dnsmasq.d/classroom.conf /etc/hostapd/hostapd.conf
+  if [ -f /etc/dhcpcd.conf ]; then
+    sed -i '/^# classroom-ap$/,/^    nohook wpa_supplicant$/d' /etc/dhcpcd.conf
+  fi
+  ip addr flush dev wlan0 >/dev/null 2>&1 || true
+}
+clean_wifi_config
+
 # --- Wi-Fi regulatory country: the radio stays blocked until one is set ---
 if [ -n "$COUNTRY" ]; then
   if command -v raspi-config >/dev/null 2>&1; then
@@ -58,14 +85,6 @@ if [ "$USE_NM" = 1 ]; then
   # Every DNS name resolves to the Pi, so tablets can type anything (picked up by NM's own dnsmasq).
   mkdir -p /etc/NetworkManager/dnsmasq-shared.d
   echo "address=/#/192.168.4.1" > /etc/NetworkManager/dnsmasq-shared.d/classroom.conf
-
-  # Remove anything from an earlier run of this script (it once created a wrong "ethernet" profile).
-  nmcli connection delete classroom-ap >/dev/null 2>&1 || true
-  # If the old hostapd/dnsmasq setup was installed, it would fight NetworkManager for wlan0 and port 53.
-  for s in hostapd dnsmasq; do
-    systemctl disable --now "$s" >/dev/null 2>&1 || true
-  done
-  rm -f /etc/dnsmasq.d/classroom.conf
 
   nmcli radio wifi on
   # wifi-sec.pmf disable: the Pi 3's brcmfmac Wi-Fi driver fails to start the AP with PMF

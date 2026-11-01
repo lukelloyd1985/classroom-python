@@ -99,6 +99,11 @@ It picks the method for your OS automatically:
   `classroom-ap`. NetworkManager supplies DHCP and DNS itself, so `hostapd`/`dnsmasq` are not used.
 * **Older (Bullseye):** `hostapd` + `dnsmasq` + `dhcpcd`.
 
+The script is safe to re-run: it first removes earlier Wi-Fi configuration (every NetworkManager Wi-Fi profile, anything
+bound to `wlan0`, and the `hostapd`/`dnsmasq`/`dhcpcd` settings from earlier runs) and then rebuilds it, so you always
+end up with the same result. That includes any Wi-Fi network you had saved on the Pi (for example from Imager);
+wired (Ethernet) connections are left alone.
+
 Running it over Wi-Fi SSH will cut your session (wlan0 becomes the hotspot), so use Ethernet or a screen and keyboard.
 Review the script before running it on a Pi you care about; it edits Wi-Fi and DNS configuration.
 

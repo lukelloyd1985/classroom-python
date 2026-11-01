@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Python</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="vendor/codemirror/codemirror.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="bar">
+  <button id="run" class="btn go">&#9654; Run</button>
+  <button id="stop" class="btn stop" disabled>&#9632; Stop</button>
+  <button id="newb" class="btn">New</button>
+  <button id="clear" class="btn">Clear output</button>
+  <button id="colours" class="btn" title="Syntax colours (turn off if typing is awkward)">Colours: off</button>
+  <span id="status"></span>
+</div>
+<div id="notice"></div>
+<div id="editorwrap">
+  <textarea id="code" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+</div>
+<pre id="out"></pre>
+<form id="inputrow" action="#" onsubmit="return false">
+  <input id="stdin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Type here when the program asks for input, then press Enter">
+  <button id="send" class="btn" type="submit">Enter</button>
+</form>
+
+<!-- Everything below is ES5 so it runs on Android 4.2 browsers. -->
+<script src="vendor/skulpt/skulpt.min.js"></script>
+<script src="vendor/skulpt/skulpt-stdlib.js"></script>
+<script src="vendor/codemirror/codemirror.js"></script>
+<script src="vendor/codemirror/python.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

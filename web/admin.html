@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Teacher controls</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: sans-serif; margin: 0; padding: 16px; background: #f4f4f4; max-width: 640px; }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  .card { background: #fff; border: 1px solid #ccd; border-radius: 6px; padding: 12px; margin-bottom: 14px; }
+  button { font-size: 18px; padding: 12px 16px; margin: 4px 6px 4px 0; border: 1px solid #99a; border-radius: 4px; background: #e8e8ee; }
+  button.on { background: #2e9e4f; color: #fff; border-color: #1f7a3a; font-weight: bold; }
+  button.danger { background: #c0392b; color: #fff; border-color: #8e281e; }
+  input { font-size: 18px; padding: 8px; width: 120px; }
+  .small { color: #556; font-size: 14px; margin-top: 6px; }
+  #msg { color: #b00020; min-height: 20px; }
+</style>
+</head>
+<body>
+<h1>Classroom Python - teacher controls</h1>
+
+<div class="card" id="login">
+  <div>Teacher PIN: <input id="pin" type="password" autocomplete="off"> <button id="go">Unlock</button></div>
+  <div class="small">The PIN is printed when the server starts and saved in <code>admin_pin.txt</code> in the data folder on the Pi.</div>
+  <div id="msg"></div>
+</div>
+
+<div class="card" id="panel" style="display:none">
+  <div><b>Where do students' programs run?</b></div>
+  <button id="m-client">On each tablet<br><span class="small">(Skulpt, no load on the Pi)</span></button>
+  <button id="m-server">On the Pi<br><span class="small">(real Python, full features)</span></button>
+  <div class="small">Tablets pick up the change within about 5 seconds. A program that is already running finishes where it started.</div>
+  <hr>
+  <div id="status" class="small"></div>
+  <button id="killall" class="danger">Stop all programs running on the Pi</button>
+  <hr>
+  <button id="reset" class="danger">Clear the code on all tablets</button>
+  <div class="small">Every tablet wipes its saved code within about 5 seconds, or the next time it connects if it is off now.
+  Students can also clear their own with the <b>New</b> button.</div>
+  <div id="resetmsg" class="small"></div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var pin = '';
+  try { pin = window.sessionStorage.getItem('cp.pin') || ''; } catch (e) { }
+
+  function api(method, url, body, cb) {
+    var r = new XMLHttpRequest();
+    r.open(method, url, true);
+    r.timeout = 6000;
+    r.setRequestHeader('X-Admin-Pin', pin);
+    r.setRequestHeader('Content-Type', 'application/json');
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) { return; }
+      var d = null;
+      try { d = JSON.parse(r.responseText); } catch (e) { }
+      cb(r.status, d);
+    };
+    r.send(body ? JSON.stringify(body) : null);
+  }
+
+  function render(d) {
+    $('m-client').className = d.mode === 'client' ? 'on' : '';
+    $('m-server').className = d.mode === 'server' ? 'on' : '';
+    $('status').innerHTML = '';
+    $('status').appendChild(document.createTextNode(
+      'Mode: ' + (d.mode === 'client' ? 'on each tablet' : 'on the Pi') +
+      '  |  programs running on the Pi now: ' + d.running + ' of ' + d.maxProcs +
+      '  |  network cut off for student code: ' + (d.networkSandbox ? 'yes' : 'no') +
+      '  |  Python ' + d.python));
+  }
+
+  function refresh() {
+    api('GET', 'api/admin/status', null, function (st, d) {
+      if (st === 200) {
+        $('login').style.display = 'none';
+        $('panel').style.display = 'block';
+        render(d);
+        setTimeout(refresh, 3000);
+      } else {
+        $('login').style.display = 'block';
+        $('panel').style.display = 'none';
+        $('msg').innerHTML = pin ? 'Wrong PIN, or the Pi cannot be reached.' : '';
+      }
+    });
+  }
+
+  function setMode(m) {
+    api('POST', 'api/admin/mode', { mode: m }, function (st, d) { if (st === 200) { refresh(); } });
+  }
+  $('m-client').onclick = function () { setMode('client'); };
+  $('m-server').onclick = function () { setMode('server'); };
+  $('reset').onclick = function () {
+    if (!window.confirm('Clear the saved code on EVERY tablet? This cannot be undone.')) { return; }
+    api('POST', 'api/admin/reset', {}, function (st) {
+      $('resetmsg').innerHTML = st === 200 ? 'Done - tablets will clear shortly.' : 'Failed (wrong PIN or Pi unreachable).';
+    });
+  };
+  $('killall').onclick = function () { api('POST', 'api/admin/killall', {}, function () { }); };
+  $('go').onclick = function () {
+    pin = $('pin').value;
+    try { window.sessionStorage.setItem('cp.pin', pin); } catch (e) { }
+    refresh();
+  };
+  if (pin) { refresh(); }
+}());
+</script>
+</body>
+</html>

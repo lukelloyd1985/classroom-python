@@ -155,6 +155,20 @@ ip addr show wlan0                        # want 192.168.4.1/24
   `/opt/classroom-python`. Run `sudo chmod 755 /opt/classroom-python && sudo chmod -R a+rX /opt/classroom-python && sudo systemctl restart classroom-python`
   (re-running `setup.sh` does this too). Check with `namei -l /opt/classroom-python/server`.
 
+## Updating the app (without touching Wi-Fi)
+
+To get new code onto a Pi that is already set up, do **not** re-run `setup.sh`: it deletes and recreates the Wi-Fi
+hotspot, which drops every tablet (and your SSH session if you are on Wi-Fi). Use `update.sh` instead:
+
+```sh
+cd ~/classroom-python
+git pull                    # or copy the new folder onto the Pi
+sudo ./pi/update.sh
+```
+It copies `server/` and `web/` to `/opt/classroom-python`, refreshes the systemd unit and restarts the service.
+The hotspot stays up; tablets lose the page for a second or two and Pi-mode programs running at that moment stop.
+The teacher PIN, the chosen mode and each tablet's saved code are kept.
+
 ## Pi mode limits and safety
 
 Student programs run as subprocesses with: 10 s CPU, 384 MB memory, 1 MB per written file, 64 open files,
@@ -174,7 +188,7 @@ server/test_server.py   `python3 -m unittest test_server` (runs, input, limits, 
 web/index.html, app.js  student page (ES5 only)
 web/admin.html          teacher controls
 web/vendor/             Skulpt 1.0.0 (MIT), CodeMirror 5.65 (MIT) - no CDN needed offline
-pi/                     setup script and systemd unit
+pi/                     setup.sh (first install + Wi-Fi), update.sh (app only), systemd unit
 ```
 
 ## Known gaps

@@ -87,16 +87,49 @@ Check the Python version before you start: `python3 --version` should show 3.7 o
 Run these on the Pi, from the `Classroom Python` folder:
 
 ```sh
-sudo ./pi/setup.sh PythonClass "a-good-passphrase"
+sudo ./pi/setup.sh PythonClass "a-good-passphrase" GB     # GB = your 2-letter Wi-Fi country code
 sudo reboot
 ```
-This installs `hostapd` + `dnsmasq`, makes the Pi a Wi-Fi network at `192.168.4.1`
-(every DNS name resolves to the Pi, so tablets can type anything), and installs the
-`classroom-python` systemd service on port 80 running as an unprivileged `classroom` user.
+The script makes the Pi a Wi-Fi network at `192.168.4.1` (every DNS name resolves to the Pi, so tablets can type
+anything) and installs the `classroom-python` systemd service on port 80 as an unprivileged `classroom` user.
 The PIN is in `/var/lib/classroom-python/admin_pin.txt`.
+It picks the method for your OS automatically:
+
+* **Raspberry Pi OS Bookworm or newer (NetworkManager):** creates a NetworkManager **Wi-Fi hotspot** profile
+  `classroom-ap`. NetworkManager supplies DHCP and DNS itself, so `hostapd`/`dnsmasq` are not used.
+* **Older (Bullseye):** `hostapd` + `dnsmasq` + `dhcpcd`.
+
+Running it over Wi-Fi SSH will cut your session (wlan0 becomes the hotspot), so use Ethernet or a screen and keyboard.
 Review the script before running it on a Pi you care about; it edits Wi-Fi and DNS configuration.
-Network-manager setups differ between Raspberry Pi OS releases, so check `ip addr show wlan0` shows `192.168.4.1`
-and set that address manually if not.
+
+### Hotspot not working?
+
+Check, in order:
+
+```sh
+nmcli connection show                     # classroom-ap must have TYPE "wifi" (not "ethernet")
+nmcli -f 802-11-wireless.mode,ipv4.method connection show classroom-ap   # want: ap  /  shared
+nmcli radio wifi                          # want: enabled
+rfkill list wifi                          # "Soft blocked: yes" => set the Wi-Fi country (below)
+ip addr show wlan0                        # want 192.168.4.1/24
+```
+
+* **Profile shows as `ethernet`** (an earlier version of `setup.sh` did this): re-run the current script, or fix by hand:
+  ```sh
+  sudo nmcli connection delete classroom-ap
+  sudo nmcli connection add type wifi ifname wlan0 con-name classroom-ap autoconnect yes ssid PythonClass \
+    802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 6 \
+    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "a-good-passphrase" \
+    ipv4.method shared ipv4.addresses 192.168.4.1/24 ipv6.method disabled
+  sudo nmcli connection up classroom-ap
+  ```
+  If you ran the earlier version, also clean up what it left behind:
+  `sudo systemctl disable --now hostapd dnsmasq; sudo rm -f /etc/dnsmasq.d/classroom.conf`.
+* **Radio blocked / no country set:** `sudo raspi-config nonint do_wifi_country GB` (your own code), then `sudo rfkill unblock wlan`.
+* **Tablets join but pages do not load:** `systemctl status classroom-python`, and check nothing else is using port 80.
+* **Tablets join but get no address:** make sure `hostapd`/`dnsmasq` are disabled on a NetworkManager system (see above);
+  they conflict with NetworkManager's own DHCP/DNS.
+* The tablets' Android 4.2 Wi-Fi handles WPA2 (AES) fine; if one still cannot join, try a shorter, simple passphrase.
 
 ## Pi mode limits and safety
 

@@ -119,12 +119,16 @@ ip addr show wlan0                        # want 192.168.4.1/24
   sudo nmcli connection delete classroom-ap
   sudo nmcli connection add type wifi ifname wlan0 con-name classroom-ap autoconnect yes ssid PythonClass \
     802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 6 \
-    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "a-good-passphrase" \
+    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "a-good-passphrase" wifi-sec.pmf disable \
     ipv4.method shared ipv4.addresses 192.168.4.1/24 ipv6.method disabled
   sudo nmcli connection up classroom-ap
   ```
   If you ran the earlier version, also clean up what it left behind:
   `sudo systemctl disable --now hostapd dnsmasq; sudo rm -f /etc/dnsmasq.d/classroom.conf`.
+* **`nl80211: kernel reports: key setting validation failed` / `Failed to initialize AP interface` in
+  `journalctl -u wpa_supplicant`** (seen on a Raspberry Pi 3): turn off protected management frames (PMF), which the Pi's
+  Broadcom driver mishandles in access-point mode. `setup.sh` now does this; on an existing profile run
+  `sudo nmcli connection modify classroom-ap 802-11-wireless-security.pmf 1 && sudo nmcli connection up classroom-ap`.
 * **Radio blocked / no country set:** `sudo raspi-config nonint do_wifi_country GB` (your own code), then `sudo rfkill unblock wlan`.
 * **Tablets join but pages do not load:** `systemctl status classroom-python`, and check nothing else is using port 80.
 * **Tablets join but get no address:** make sure `hostapd`/`dnsmasq` are disabled on a NetworkManager system (see above);

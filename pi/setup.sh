@@ -68,9 +68,11 @@ if [ "$USE_NM" = 1 ]; then
   rm -f /etc/dnsmasq.d/classroom.conf
 
   nmcli radio wifi on
+  # wifi-sec.pmf disable: the Pi 3's brcmfmac Wi-Fi driver fails to start the AP with PMF
+  # ("key setting validation failed"), which also suits the old Android 4.2 tablets.
   nmcli connection add type wifi ifname wlan0 con-name classroom-ap autoconnect yes ssid "$SSID" \
     802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 6 \
-    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$PASS" wifi-sec.proto rsn wifi-sec.pairwise ccmp wifi-sec.group ccmp \
+    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$PASS" wifi-sec.proto rsn wifi-sec.pairwise ccmp wifi-sec.group ccmp wifi-sec.pmf disable \
     ipv4.method shared ipv4.addresses 192.168.4.1/24 ipv6.method disabled
   nmcli connection up classroom-ap || echo "Could not start the hotspot yet - see the README troubleshooting section."
 else

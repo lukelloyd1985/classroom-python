@@ -10,7 +10,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var els = {
-    run: $('run'), stop: $('stop'), clear: $('clear'), colours: $('colours'), status: $('status'),
+    run: $('run'), stop: $('stop'), newb: $('newb'), clear: $('clear'), colours: $('colours'), status: $('status'),
     notice: $('notice'), wrap: $('editorwrap'), code: $('code'), out: $('out'),
     inputrow: $('inputrow'), stdin: $('stdin'), bar: $('bar')
   };
@@ -61,7 +61,8 @@
   // ---------- editor (plain textarea, optionally CodeMirror for colours) ----------
   var cm = null;
   var DEFAULT_CODE = 'name = input("What is your name? ")\nprint("Hello, " + name)\n';
-  els.code.value = store('cp.code') || DEFAULT_CODE;
+  var savedCode = store('cp.code');
+els.code.value = savedCode === null ? DEFAULT_CODE : savedCode;
 
   function getCode() { return cm ? cm.getValue() : els.code.value; }
   function setCode(v) { if (cm) { cm.setValue(v); } else { els.code.value = v; } }
@@ -125,6 +126,28 @@
   function clearOut() { els.out.innerHTML = ''; }
   els.clear.onclick = clearOut;
 
+  // "New": empty the editor and the saved copy (asks first so a stray tap cannot wipe work)
+  function wipeCode() {
+    setCode('');
+    store('cp.code', '');
+    clearOut();
+  }
+  els.newb.onclick = function () {
+    if (running) { return; }
+    if (window.confirm('Clear your code and start a new program? This cannot be undone.')) { wipeCode(); }
+  };
+
+  // The teacher's "clear all tablets" button bumps a counter on the Pi. When this tablet sees a new number
+  // (right away, or the next time it connects) it wipes its saved code. The first number seen is only remembered.
+  function applyReset(n) {
+    var seen = store('cp.reset');
+    store('cp.reset', String(n));
+    if (seen !== null && seen !== String(n)) {
+      wipeCode();
+      write('[Your teacher cleared the code on all tablets]\n', 'note');
+    }
+  }
+
   function showNotice(msg) {
     els.notice.style.display = msg ? 'block' : 'none';
     els.notice.innerHTML = '';
@@ -162,6 +185,7 @@
       if (status === 200 && data && !forced && (data.mode === 'client' || data.mode === 'server')) {
         teacherMode = data.mode;
       }
+      if (status === 200 && data && typeof data.reset === 'number') { applyReset(data.reset); }
       if (!running) { updateStatus(); }
       setTimeout(pollConfig, 5000);
     }, 4000);

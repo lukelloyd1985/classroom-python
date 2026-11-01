@@ -145,6 +145,15 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(st, 200)
         self.assertIn("running", r)
 
+    def test_admin_reset_counter(self):
+        n = call(self.base, "/api/config")[1]["reset"]
+        st, r = call(self.base, "/api/admin/reset", {}, pin="0000")
+        self.assertEqual(st, 403)
+        self.assertEqual(call(self.base, "/api/config")[1]["reset"], n)
+        st, r = call(self.base, "/api/admin/reset", {}, pin="1234")
+        self.assertEqual((st, r["reset"]), (200, n + 1))
+        self.assertEqual(server.State(self.httpd.handler.cfg).reset, n + 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,6 +33,11 @@
   <hr>
   <div id="status" class="small"></div>
   <button id="killall" class="danger">Stop all programs running on the Pi</button>
+  <hr>
+  <button id="reset" class="danger">Clear the code on all tablets</button>
+  <div class="small">Every tablet wipes its saved code within about 5 seconds, or the next time it connects if it is off now.
+  Students can also clear their own with the <b>New</b> button.</div>
+  <div id="resetmsg" class="small"></div>
 </div>
 
 <script>
@@ -87,6 +92,12 @@
   }
   $('m-client').onclick = function () { setMode('client'); };
   $('m-server').onclick = function () { setMode('server'); };
+  $('reset').onclick = function () {
+    if (!window.confirm('Clear the saved code on EVERY tablet? This cannot be undone.')) { return; }
+    api('POST', 'api/admin/reset', {}, function (st) {
+      $('resetmsg').innerHTML = st === 200 ? 'Done - tablets will clear shortly.' : 'Failed (wrong PIN or Pi unreachable).';
+    });
+  };
   $('killall').onclick = function () { api('POST', 'api/admin/killall', {}, function () { }); };
   $('go').onclick = function () {
     pin = $('pin').value;

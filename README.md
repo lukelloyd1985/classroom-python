@@ -29,6 +29,11 @@ Open `/admin.html`, enter the PIN, tap **On each tablet** or **On the Pi**. Tabl
 (a run already in progress finishes where it started). The choice survives restarts.
 The same page shows how many runs are active on the Pi and has a **Stop all** button.
 
+**Clearing code:** each tablet autosaves its code in its own browser storage, and nothing is kept on the Pi.
+Students clear their own with the **New** button (it asks first). The teacher can wipe every tablet from `/admin.html`
+with **Clear the code on all tablets**: tablets clear within ~5 seconds, or the next time they connect if they were off.
+(A tablet that has never connected to this Pi before cannot be reached by a reset it missed; it has no saved code anyway.)
+
 **Changing the PIN:** on the Pi, edit the PIN file and restart the service (the file is read only at start-up):
 
 ```sh

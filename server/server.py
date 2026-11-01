@@ -69,27 +69,38 @@ def detect_net_sandbox():
 
 
 class State(object):
-    """Persisted teacher settings (just the mode flag)."""
+    """Persisted teacher settings: the mode flag and a "reset" counter (bumping it makes tablets clear their code)."""
 
     def __init__(self, cfg):
         self.path = os.path.join(cfg.data_dir, "state.json")
         self.lock = threading.Lock()
         self.mode = cfg.default_mode
+        self.reset = 0
         try:
             with open(self.path) as f:
-                m = json.load(f).get("mode")
-            if m in MODES:
-                self.mode = m
+                data = json.load(f)
+            if data.get("mode") in MODES:
+                self.mode = data["mode"]
+            if isinstance(data.get("reset"), int):
+                self.reset = data["reset"]
         except Exception:
             pass
+
+    def _save(self):
+        tmp = self.path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump({"mode": self.mode, "reset": self.reset}, f)
+        os.replace(tmp, self.path)
 
     def set_mode(self, mode):
         with self.lock:
             self.mode = mode
-            tmp = self.path + ".tmp"
-            with open(tmp, "w") as f:
-                json.dump({"mode": mode}, f)
-            os.replace(tmp, self.path)
+            self._save()
+
+    def bump_reset(self):
+        with self.lock:
+            self.reset += 1
+            self._save()
 
 
 class Session(object):
@@ -381,6 +392,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "bad mode"}, 400)
             self.state.set_mode(data["mode"])
             return self._json(self._config())
+        if u.path == "/api/admin/reset":
+            if not self._admin():
+                return
+            self.state.bump_reset()
+            return self._json(self._config())
         if u.path == "/api/admin/killall":
             if not self._admin():
                 return
@@ -390,7 +406,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _config(self):
         c = self.cfg
-        return {"mode": self.state.mode,
+        return {"mode": self.state.mode, "reset": self.state.reset,
                 "limits": {"cpuSeconds": c.cpu_seconds, "wallSeconds": c.wall_seconds}}
 
     def _static(self, path):

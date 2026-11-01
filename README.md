@@ -23,6 +23,8 @@ Students: `http://<pi-address>:8000/`   Teacher: `http://<pi-address>:8000/admin
 
 Python 3.7+ standard library only: nothing to `pip install`.
 
+**Learning Python?** See [docs/](docs/README.md) for lessons, labs and a cheatsheet.
+
 ## Switching mode during class
 
 Open `/admin.html`, enter the PIN, tap **On each tablet** or **On the Pi**. Tablets follow within ~5 seconds

@@ -34,11 +34,28 @@ fi
 # --- app ---
 id classroom >/dev/null 2>&1 || useradd --system --home /var/lib/classroom-python --shell /usr/sbin/nologin classroom
 mkdir -p /opt/classroom-python /var/lib/classroom-python
+# Fresh copy each run (no stale files). Permissions are set explicitly: cp keeps the source folder's
+# modes, and a private (700) project folder would stop the "classroom" user entering /opt/classroom-python.
+rm -rf /opt/classroom-python/server /opt/classroom-python/web
 cp -r "$HERE/server" "$HERE/web" /opt/classroom-python/
+rm -rf /opt/classroom-python/server/data /opt/classroom-python/server/__pycache__
+chown -R root:root /opt/classroom-python
+chmod 755 /opt/classroom-python
+chmod -R u=rwX,go=rX /opt/classroom-python
 chown -R classroom:classroom /var/lib/classroom-python
+chmod 750 /var/lib/classroom-python
 cp "$HERE/pi/classroom-python.service" /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now classroom-python
+systemctl enable classroom-python
+systemctl restart classroom-python
+sleep 2
+if systemctl is-active --quiet classroom-python; then
+  echo "classroom-python service is running."
+else
+  echo "WARNING: classroom-python did not start. Details:"
+  systemctl status classroom-python --no-pager -l | tail -15 || true
+  journalctl -u classroom-python -n 20 --no-pager || true
+fi
 
 # --- clean slate: remove Wi-Fi/hotspot config from any earlier run so re-running always ends the same ---
 # Deletes: every NetworkManager Wi-Fi profile, anything bound to wlan0 (e.g. the wrong "ethernet" profile an
@@ -88,10 +105,11 @@ if [ "$USE_NM" = 1 ]; then
 
   nmcli radio wifi on
   # wifi-sec.pmf disable: the Pi 3's brcmfmac Wi-Fi driver fails to start the AP with PMF
-  # ("key setting validation failed"), which also suits the old Android 4.2 tablets.
+  # ("key setting validation failed"). WPA+WPA2 with TKIP+AES (not RSN/CCMP only): the Android 4.2 tablets
+  # failed the handshake (AP-STA-POSSIBLE-PSK-MISMATCH) with a strict WPA2/AES-only network.
   nmcli connection add type wifi ifname wlan0 con-name classroom-ap autoconnect yes ssid "$SSID" \
     802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 6 \
-    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$PASS" wifi-sec.proto rsn wifi-sec.pairwise ccmp wifi-sec.group ccmp wifi-sec.pmf disable \
+    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$PASS" wifi-sec.proto wpa,rsn wifi-sec.pairwise tkip,ccmp wifi-sec.group tkip,ccmp wifi-sec.pmf disable \
     ipv4.method shared ipv4.addresses 192.168.4.1/24 ipv6.method disabled
   nmcli connection up classroom-ap || echo "Could not start the hotspot yet - see the README troubleshooting section."
 else

@@ -124,7 +124,8 @@ ip addr show wlan0                        # want 192.168.4.1/24
   sudo nmcli connection delete classroom-ap
   sudo nmcli connection add type wifi ifname wlan0 con-name classroom-ap autoconnect yes ssid PythonClass \
     802-11-wireless.mode ap 802-11-wireless.band bg 802-11-wireless.channel 6 \
-    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "a-good-passphrase" wifi-sec.pmf disable \
+    wifi-sec.key-mgmt wpa-psk wifi-sec.psk "a-good-passphrase" \
+    wifi-sec.proto wpa,rsn wifi-sec.pairwise tkip,ccmp wifi-sec.group tkip,ccmp wifi-sec.pmf disable \
     ipv4.method shared ipv4.addresses 192.168.4.1/24 ipv6.method disabled
   sudo nmcli connection up classroom-ap
   ```
@@ -138,7 +139,14 @@ ip addr show wlan0                        # want 192.168.4.1/24
 * **Tablets join but pages do not load:** `systemctl status classroom-python`, and check nothing else is using port 80.
 * **Tablets join but get no address:** make sure `hostapd`/`dnsmasq` are disabled on a NetworkManager system (see above);
   they conflict with NetworkManager's own DHCP/DNS.
-* The tablets' Android 4.2 Wi-Fi handles WPA2 (AES) fine; if one still cannot join, try a shorter, simple passphrase.
+* **Android 4.2 tablet says "authentication problem" and the log shows `AP-STA-POSSIBLE-PSK-MISMATCH` even with the right
+  password:** the strict WPA2/AES-only setting fails the handshake on some old tablets. `setup.sh` therefore enables WPA+WPA2
+  with TKIP+AES. On an existing profile:
+  `sudo nmcli connection modify classroom-ap wifi-sec.proto wpa,rsn wifi-sec.pairwise tkip,ccmp wifi-sec.group tkip,ccmp && sudo nmcli connection up classroom-ap`.
+  Forget and rejoin the network on the tablet afterwards.
+* **`classroom-python` fails with `status=200/CHDIR ... Permission denied`:** the `classroom` user cannot enter
+  `/opt/classroom-python`. Run `sudo chmod 755 /opt/classroom-python && sudo chmod -R a+rX /opt/classroom-python && sudo systemctl restart classroom-python`
+  (re-running `setup.sh` does this too). Check with `namei -l /opt/classroom-python/server`.
 
 ## Pi mode limits and safety
 
